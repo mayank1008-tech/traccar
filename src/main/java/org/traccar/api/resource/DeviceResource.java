@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2025 Anton Tananaev (anton@traccar.org)
+ * Copyright 2015 - 2026 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,9 @@ public class DeviceResource extends BaseObjectResource<Device> {
             @QueryParam("all") boolean all, @QueryParam("userId") long userId,
             @QueryParam("uniqueId") List<String> uniqueIds,
             @QueryParam("id") List<Long> deviceIds,
-            @QueryParam("excludeAttributes") boolean excludeAttributes) throws StorageException {
+            @QueryParam("excludeAttributes") boolean excludeAttributes,
+            @QueryParam("limit") int limit, @QueryParam("offset") int offset,
+            @QueryParam("keyword") String keyword) throws StorageException {
 
         Columns columns = excludeAttributes ? new Columns.Exclude("attributes") : new Columns.All();
 
@@ -141,8 +143,13 @@ public class DeviceResource extends BaseObjectResource<Device> {
                 }
             }
 
+            if (keyword != null && !keyword.isEmpty()) {
+                conditions.add(new Condition.Contains(
+                        List.of("name", "uniqueId", "phone", "model", "contact"), keyword));
+            }
+
             return storage.getObjectsStream(baseClass, new Request(
-                    columns, Condition.merge(conditions), new Order("name")));
+                    columns, Condition.merge(conditions), new Order("name", false, limit, offset)));
 
         }
     }
@@ -193,7 +200,6 @@ public class DeviceResource extends BaseObjectResource<Device> {
             case "image/png" -> "png";
             case "image/gif" -> "gif";
             case "image/webp" -> "webp";
-            case "image/svg+xml" -> "svg";
             default -> throw new IllegalArgumentException("Unsupported image type");
         };
     }
